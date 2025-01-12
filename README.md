@@ -45,15 +45,23 @@ df = (
 
 
 **Data sources and license information**
+
 US
-Source: https://www.congress.gov/congressional-record 
-License: https://www.loc.gov/collections/publications-of-the-law-library-of-congress/about-this-collection/rights-and-access/#:~:text=Publications%20of%20the%20Law%20Library%20of%20Congress%20are%20works%20of,free%20to%20use%20and%20reuse. 
-API: https://api.govinfo.gov/docs/ 
+* Source: https://www.congress.gov/congressional-record 
+* License: https://www.loc.gov/collections/publications-of-the-law-library-of-congress/about-this-collection/rights-and-access/#:~:text=Publications%20of%20the%20Law%20Library%20of%20Congress%20are%20works%20of,free%20to%20use%20and%20reuse. 
+* API: https://api.govinfo.gov/docs/ 
+
 Canada
-Source: https://www.ourcommons.ca/documentviewer/en/44-1/house/sitting-340/hansard 
-License: https://www.ourcommons.ca/en/open-data 
-API: https://api.openparliament.ca 
+* Source: https://www.ourcommons.ca/documentviewer/en/44-1/house/sitting-340/hansard 
+* License: https://www.ourcommons.ca/en/open-data 
+* API: https://api.openparliament.ca
+  
 UK
-Source: https://hansard.parliament.uk/ 
-License: https://www.parliament.uk/site-information/copyright/ 
-API: https://www.theyworkforyou.com/ 
+* Source: https://hansard.parliament.uk/ 
+* License: https://www.parliament.uk/site-information/copyright/ 
+* API: https://www.theyworkforyou.com/
+  
+Biorxiv
+* Source: https://www.biorxiv.org/ 
+* API: https://api.biorxiv.org/ 
+* License information: https://www.biorxiv.org/about/FAQ 
