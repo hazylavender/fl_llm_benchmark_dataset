@@ -58,20 +58,28 @@ def getSpeeches(url:str):
             result.append(partition)
         return result
     except:
-        # raise Exception
-        print(f'failed to get result for url: {url}')
-
+        raise Exception
+        # print(f'failed to get result for url: {url}')
+            
+    
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser("Pass year and month")
-    parser.add_argument('-y', '--year', help='year',type=int)
-    parser.add_argument('-m', '--month', help='month',type=int)
-    args = parser.parse_args()
-    if args:
-        year = args.year
-        month = args.month
+    # parser = argparse.ArgumentParser("Pass year and month")
+    # parser.add_argument('-y', '--year', help='year',type=int)
+    # parser.add_argument('-m', '--month', help='month',type=int)
+    # args = parser.parse_args()
+    # if args:
+    #     year = args.year
+    #     month = args.month
+    print(f'Extracting UK parliamentary dataset.')
+    if int(os.getenv("YEAR", "0")) != 0 and int(os.getenv("MONTH", "0")) != 0:
+        year = int(os.getenv("YEAR", "0"))
+        month = int(os.getenv("MONTH", "0"))
+    elif datetime.now().month == 1:
+        year = datetime.now().year - 1
+        month = 12
     else:
         year = datetime.now().year
-        month = datetime.now().month
+        month = datetime.now().month - 1
     start_date, end_date = get_start_and_end_dates(year, month)
     urls = getDebateUrls(start_date, end_date)
     result = []

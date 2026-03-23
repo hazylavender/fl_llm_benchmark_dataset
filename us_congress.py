@@ -9,7 +9,7 @@ import os
 from bs4 import BeautifulSoup
 from utils import get_start_and_end_dates, clean_text, starts_with_any
 
-API_RATE_LIMIT = 1000
+API_RATE_LIMIT = 5000
 API_KEY = 'n8PasSTHypf2IrWubb3WkpFKqUTNz4U98tJieYiW'
 # '0hX0eme3Y5XMGMLRSp7orTlpzUCKnugtB0IOo5c6'
 
@@ -23,11 +23,11 @@ class USCongressionalRecordFetcher:
             time.sleep(60*60)
             self.api_call_counter = 0
 
-    def get_congressional_record_packages(self, start_date: datetime, end_date: datetime):
+    def get_congressional_record_packages(self, start_date: datetime, end_date: datetime, api_key: str):
         # Can get at most 1000 items
         start_date_str = start_date.strftime('%Y-%m-%d')
         end_date_str = end_date.strftime('%Y-%m-%d')
-        url = f'https://api.govinfo.gov/published/{start_date_str}/{end_date_str}?pageSize=1000&collection=CREC&offsetMark=%2A&api_key={API_KEY}'
+        url = f'https://api.govinfo.gov/published/{start_date_str}/{end_date_str}?pageSize=1000&collection=CREC&offsetMark=%2A&api_key={api_key}'
         response = requests.get(url)
         self.update_api_call_counter_and_sleep()
         if response.status_code == 200:
@@ -44,8 +44,8 @@ class USCongressionalRecordFetcher:
         else: 
             return None
 
-    def get_all_doc_from_package_id(self, package_id):
-        url = f'https://api.govinfo.gov/packages/{package_id}/granules?pageSize=1000&offsetMark=%2A&api_key={API_KEY}'
+    def get_all_doc_from_package_id(self, package_id, api_key):
+        url = f'https://api.govinfo.gov/packages/{package_id}/granules?pageSize=1000&offsetMark=%2A&api_key={api_key}'
         response = requests.get(url)
         self.update_api_call_counter_and_sleep()
         if response.status_code == 200:
@@ -55,8 +55,8 @@ class USCongressionalRecordFetcher:
                 f"Failed to fetch data for {package_id}: {response.status_code}")
             return None
 
-    def get_all_partitions_from_a_package(self, package_id):
-        package_response = self.get_all_doc_from_package_id(package_id)
+    def get_all_partitions_from_a_package(self, package_id, api_key):
+        package_response = self.get_all_doc_from_package_id(package_id, api_key)
         list_of_pages = package_response.get('granules', [])    
         result = []
         for page in list_of_pages:
@@ -65,7 +65,7 @@ class USCongressionalRecordFetcher:
             chamber = page.get('granuleClass', None)
             if not granule_link and granule_id:
                 continue
-            content = self.get_content_from_granual_link(granule_link)
+            content = self.get_content_from_granual_link(granule_link, api_key)
             if not content:
                 continue
             text = self.parse_html_content(content)
@@ -108,8 +108,8 @@ class USCongressionalRecordFetcher:
         # Join paragraphs with double newlines
         return '\n\n'.join(cleaned_paragraphs).strip().rstrip('\n').rstrip('_')
 
-    def get_content_from_granual_link(self, url: str):
-        url = url.replace('summary', f'htm?api_key={API_KEY}')
+    def get_content_from_granual_link(self, url: str, api_key:str):
+        url = url.replace('summary', f'htm?api_key={api_key}')
         response = requests.get(url)
         self.update_api_call_counter_and_sleep()
         if response.status_code == 200:
@@ -129,8 +129,8 @@ class USCongressionalRecordFetcher:
         try:
             # Define the regex pattern for a paragraph starting with Mr./Mrs./Ms. followed by an all-caps name
             # pattern = re.compile(r'(\n\n(Mr\.|Mrs\.|Ms\.)\s[A-Z]+(?:-[A-Z\s]+)\.?)')
-            valid_speaker = '(?:(?:Mr\.|Mrs\.|Ms\.)\s[A-Z]+-?[A-Z\s]+)\.?'
-            invalid_speaker = 'The\sPRESIDING\sOFFICER'
+            valid_speaker = r'(?:(?:Mr\.|Mrs\.|Ms\.)\s[A-Z]+-?[A-Z\s]+)\.?'
+            invalid_speaker = r'The\sPRESIDING\sOFFICER'
             pattern = re.compile(fr'({valid_speaker}|{invalid_speaker})')
             
             split = re.split(pattern, text)[1:]
@@ -200,16 +200,23 @@ def write_to_json_file(new_data, file_path):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser("Pass year and month")
-    parser.add_argument('-y', '--year', help='year',type=int)
-    parser.add_argument('-m', '--month', help='month',type=int)
-    args = parser.parse_args()
-    if args:
-        year = args.year
-        month = args.month
+    # parser = argparse.ArgumentParser("Pass year and month")
+    # parser.add_argument('-y', '--year', help='year',type=int)
+    # parser.add_argument('-m', '--month', help='month',type=int)
+    # args = parser.parse_args()
+    # if args:
+    #     year = args.year
+    #     month = args.month
+    print(f'Extracting US Congress dataset.')
+    if int(os.getenv("YEAR", "0")) != 0 and int(os.getenv("MONTH", "0")) != 0:
+        year = int(os.getenv("YEAR", "0"))
+        month = int(os.getenv("MONTH", "0"))
+    elif datetime.now().month == 1:
+        year = datetime.now().year - 1
+        month = 12
     else:
         year = datetime.now().year
-        month = datetime.now().month
+        month = datetime.now().month - 1
     start_date, end_date = get_start_and_end_dates(year, month)
     result_dir = './result/us'
     if not os.path.exists(result_dir):
@@ -217,11 +224,12 @@ if __name__ == '__main__':
     date_str = start_date.strftime('%Y-%m')
     file_path = os.path.join(result_dir, f'{date_str}.json')
     fetcher = USCongressionalRecordFetcher()
-    collection_resposne = fetcher.get_congressional_record_packages(start_date, end_date)
+    collection_resposne = fetcher.get_congressional_record_packages(start_date, end_date, API_KEY)
     package_ids = fetcher.get_package_id_from_collection_response(collection_resposne)
-    for package_id in package_ids:
-        result = fetcher.get_all_partitions_from_a_package(package_id)
-        print(len(result))
+    print(f'There are {len(package_ids)} packages to process.')
+    for i, package_id in enumerate(package_ids):
+        result = fetcher.get_all_partitions_from_a_package(package_id, API_KEY)
+        print(f'extracted package {i} with {len(result)} results')
         write_to_json_file(result, file_path)
         log(len(result), package_id)
     

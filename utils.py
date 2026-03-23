@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 import calendar
 import re
+from huggingface_hub import hf_hub_download
+from huggingface_hub.utils import EntryNotFoundError
 
 def get_start_and_end_dates(year, month):
     num_days = calendar.monthrange(year, month)[1]
@@ -41,7 +43,7 @@ def clean_text(text):
         text = text.replace(ph, '')
         
     # Remove ====Note===== Notation
-    re_patterns = ['\{time\}  [0-9]+', '=*( NOTE | END NOTE )=*']
+    re_patterns = [r'\{time\}  [0-9]+', r'=*( NOTE | END NOTE )=*']
     for pattern in re_patterns:
         text = re.sub(pattern, '', text)
     
@@ -66,3 +68,12 @@ def remove_tables(text):
     
     cleaned_text = re.sub(table_pattern, '', text, flags=re.DOTALL)
     return cleaned_text.strip()
+
+
+def file_exists_in_hf_repo(repo_id, file_path, repo_type='dataset', revision="main"):
+    try:
+        # Try to download the file (will raise an exception if it doesn't exist)
+        hf_hub_download(repo_id=repo_id, filename=file_path, repo_type=repo_type, revision=revision)
+        return True
+    except EntryNotFoundError:
+        return False
